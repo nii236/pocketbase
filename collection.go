@@ -16,7 +16,7 @@ func CollectionSet[T any](client *Client, collection string) *Collection[T] {
 	return &Collection[T]{
 		Client:             client,
 		Name:               collection,
-		BaseCollectionPath: client.url + "/api/collections/" + url.QueryEscape(collection),
+		BaseCollectionPath: client.PocketbaseURL + "/api/collections/" + url.QueryEscape(collection),
 	}
 }
 
@@ -55,12 +55,12 @@ func (c *Collection[T]) One(id string) (T, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", c.Name).
 		SetPathParam("id", id)
 
-	resp, err := request.Get(c.url + "/api/collections/{collection}/records/{id}")
+	resp, err := request.Get(c.PocketbaseURL + "/api/collections/{collection}/records/{id}")
 	if err != nil {
 		return response, fmt.Errorf("[one] can't send update request to pocketbase, err %w", err)
 	}
@@ -87,14 +87,14 @@ func (c *Collection[T]) OneWithParams(id string, params ParamsList) (T, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", c.Name).
 		SetPathParam("id", id).
 		SetQueryParam("fields", params.Fields).
 		SetQueryParam("expand", params.Expand)
 
-	resp, err := request.Get(c.url + "/api/collections/{collection}/records/{id}")
+	resp, err := request.Get(c.PocketbaseURL + "/api/collections/{collection}/records/{id}")
 	if err != nil {
 		return response, fmt.Errorf("[one] can't send update request to pocketbase, err %w", err)
 	}

@@ -27,10 +27,10 @@ func (b Backup) FullList() ([]ResponseBackupFullList, error) {
 		return response, err
 	}
 
-	request := b.client.R().
+	request := b.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
-	resp, err := request.Get(b.url + "/api/backups")
+	resp, err := request.Get(b.PocketbaseURL + "/api/backups")
 	if err != nil {
 		return response, fmt.Errorf("[backup] can't send fulllist request to pocketbase, err %w", err)
 	}
@@ -60,7 +60,7 @@ func (b Backup) Create(key ...string) error {
 		return err
 	}
 
-	request := b.client.R().
+	request := b.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 	if len(key) > 0 {
 		request = request.SetMultipartFormData(map[string]string{
@@ -68,7 +68,7 @@ func (b Backup) Create(key ...string) error {
 		})
 	}
 
-	resp, err := request.Post(b.url + "/api/backups")
+	resp, err := request.Post(b.PocketbaseURL + "/api/backups")
 	if err != nil {
 		return fmt.Errorf("[backup] can't send create request to pocketbase, err %w", err)
 	}
@@ -90,14 +90,14 @@ func (b Backup) Upload(key string, reader io.Reader) error {
 		return err
 	}
 
-	request := b.client.R().
+	request := b.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"name": key,
 		}).
 		SetFileReader("file", key, reader)
 
-	resp, err := request.Post(b.url + "/api/backups/upload")
+	resp, err := request.Post(b.PocketbaseURL + "/api/backups/upload")
 	if err != nil {
 		return fmt.Errorf("[backup] can't send upload request to pocketbase, err %w", err)
 	}
@@ -125,10 +125,10 @@ func (b Backup) Delete(key string) error {
 		return err
 	}
 
-	request := b.client.R().
+	request := b.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
-	resp, err := request.Delete(b.url + "/api/backups/" + key)
+	resp, err := request.Delete(b.PocketbaseURL + "/api/backups/" + key)
 	if err != nil {
 		return fmt.Errorf("[backup] can't send delete request to pocketbase, err %w", err)
 	}
@@ -150,10 +150,10 @@ func (b Backup) Restore(key string) error {
 		return err
 	}
 
-	request := b.client.R().
+	request := b.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
-	u, err := url.Parse(b.url + "/api/backups/" + strings.ToLower(key) + "/restore")
+	u, err := url.Parse(b.PocketbaseURL + "/api/backups/" + strings.ToLower(key) + "/restore")
 	if err != nil {
 		return fmt.Errorf("[backup] pocketbase returned restoring a new backup, because of an invalid URL: err %w", err)
 	}
@@ -190,7 +190,7 @@ func (b Backup) GetDownloadURL(token string, key string) (string, error) {
 	params.Add("token", token)
 	encodedParams := params.Encode()
 	u, err := url.Parse(
-		b.url + "/api/backups/" + key + "?" + encodedParams)
+		b.PocketbaseURL + "/api/backups/" + key + "?" + encodedParams)
 	if err != nil {
 		return "", err
 	}

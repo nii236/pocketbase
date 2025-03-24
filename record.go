@@ -32,7 +32,7 @@ func (c *Collection[T]) ListAuthMethods22() (AuthMethod, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
 	resp, err := request.Get(c.BaseCollectionPath + "/auth-methods")
@@ -113,7 +113,7 @@ func (c *Collection[T]) ListAuthMethods() (AuthMethodsResponse, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
 	resp, err := request.Get(c.BaseCollectionPath + "/auth-methods")
@@ -168,7 +168,7 @@ func (c *Collection[T]) AuthWithPassword(username string, password string) (Auth
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"identity": username,
@@ -192,7 +192,7 @@ func (c *Collection[T]) AuthWithPassword(username string, password string) (Auth
 		return response, fmt.Errorf("[records] can't unmarshal auth-with-password-response, err %w", err)
 	}
 
-	c.token = response.Token
+	c.Token = response.Token
 	return response, nil
 }
 
@@ -215,7 +215,7 @@ func (c *Collection[T]) AuthWithOAuth2Code(provider string, code string, codeVer
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"provider":     provider,
@@ -242,7 +242,7 @@ func (c *Collection[T]) AuthWithOAuth2Code(provider string, code string, codeVer
 		return response, fmt.Errorf("[records] can't unmarshal auth-with-oauth2-response, err %w", err)
 	}
 
-	c.token = response.Token
+	c.Token = response.Token
 	return response, nil
 }
 
@@ -271,9 +271,9 @@ func (c *Collection[T]) AuthRefresh() (AuthRefreshResponse, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
-		SetAuthToken(c.token)
+		SetAuthToken(c.Token)
 
 	resp, err := request.Post(c.BaseCollectionPath + "/auth-refresh")
 	if err != nil {
@@ -292,7 +292,7 @@ func (c *Collection[T]) AuthRefresh() (AuthRefreshResponse, error) {
 		return response, fmt.Errorf("[records] can't unmarshal auth-refresh-response, err %w", err)
 	}
 
-	c.token = response.Token
+	c.Token = response.Token
 	return response, nil
 }
 
@@ -302,7 +302,7 @@ func (c *Collection[T]) RequestVerification(email string) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"email": email,
@@ -331,7 +331,7 @@ func (c *Collection[T]) ConfirmVerification(verificationToken string) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"token": verificationToken,
@@ -357,7 +357,7 @@ func (c *Collection[T]) RequestPasswordReset(email string) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"email": email,
@@ -383,7 +383,7 @@ func (c *Collection[T]) ConfirmPasswordReset(passwordResetToken string, password
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"token":           passwordResetToken,
@@ -411,12 +411,12 @@ func (c *Collection[T]) RequestEmailChange(newEmail string) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"newEmail": newEmail,
 		}).
-		SetAuthToken(c.token)
+		SetAuthToken(c.Token)
 
 	resp, err := request.Post(c.BaseCollectionPath + "/request-email-change")
 	if err != nil {
@@ -439,13 +439,13 @@ func (c *Collection[T]) ConfirmEmailChange(emailChangeToken string, password str
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetMultipartFormData(map[string]string{
 			"token":    emailChangeToken,
 			"password": password,
 		}).
-		SetAuthToken(c.token)
+		SetAuthToken(c.Token)
 
 	resp, err := request.Post(c.BaseCollectionPath + "/confirm-email-change")
 	if err != nil {
@@ -479,7 +479,7 @@ func (c *Collection[T]) ListExternalAuths22(recordID string) ([]ExternalAuthRequ
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
 	resp, err := request.Get(c.baseCrudPath() + url.QueryEscape(recordID) + "/external-auths")
@@ -507,7 +507,7 @@ func (c *Collection[T]) UnlinkExternalAuth22(recordID string, provider string) e
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
 	resp, err := request.Delete(c.baseCrudPath() + url.QueryEscape(recordID) + "/external-auths/" + url.QueryEscape(provider))

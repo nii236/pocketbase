@@ -45,7 +45,7 @@ func (c *Collection[T]) SubscribeWith(opts SubscribeOptions, targets ...string) 
 
 	handleSSEEvent := func(ev eventsource.Event) {
 		var e Event[T]
-		if c.sseDebug {
+		if c.SSEDebug {
 			log.Printf("SSE event: %+v", ev)
 		}
 		e.Error = json.Unmarshal([]byte(ev.Data()), &e)
@@ -56,8 +56,8 @@ func (c *Collection[T]) SubscribeWith(opts SubscribeOptions, targets ...string) 
 	stream.ready.Lock()
 	startStream := func(check bool) func() error {
 		return func() (err error) {
-			req := c.client.R().SetContext(ctx).SetDoNotParseResponse(true)
-			resp, err := req.Get(c.url + "/api/realtime")
+			req := c.RestyClient.R().SetContext(ctx).SetDoNotParseResponse(true)
+			resp, err := req.Get(c.PocketbaseURL + "/api/realtime")
 			defer resp.RawBody().Close()
 			if err != nil {
 				return
@@ -118,7 +118,7 @@ func (c *Collection[T]) authSubscribeStream(data []byte, targets []string) (err 
 		return
 	}
 	s.Subscriptions = targets
-	resp, err := c.client.R().SetBody(s).Post(c.url + "/api/realtime")
+	resp, err := c.RestyClient.R().SetBody(s).Post(c.PocketbaseURL + "/api/realtime")
 	if err != nil {
 		return
 	}

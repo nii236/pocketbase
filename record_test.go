@@ -50,7 +50,7 @@ func TestCollection_AuthWithPassword(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, response.Token)
 		assert.Len(t, response.Token, 224)
-		assert.Equal(t, response.Token, defaultClient.token)
+		assert.Equal(t, response.Token, defaultClient.Token)
 	})
 
 	t.Run("authenticate with invalid user credentials", func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestCollection_AuthWithPassword(t *testing.T) {
 		assert.Contains(t, err.Error(), "Failed to authenticate")
 		assert.Empty(t, response.Token)
 		assert.Len(t, response.Token, 0)
-		assert.Equal(t, response.Token, defaultClient.token)
+		assert.Equal(t, response.Token, defaultClient.Token)
 	})
 }
 
@@ -81,7 +81,7 @@ func TestCollection_AuthRefresh(t *testing.T) {
 	t.Run("refresh authentication with invalid user auth token", func(t *testing.T) {
 		defaultClient := NewClient(defaultURL)
 
-		defaultClient.token = strings.Repeat("X", 207)
+		defaultClient.Token = strings.Repeat("X", 207)
 		_, err := CollectionSet[User](defaultClient, "users").AuthRefresh()
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "valid record authorization")
@@ -101,7 +101,7 @@ func TestCollection_AuthRefresh(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEmpty(t, response.Token)
 		assert.Len(t, response.Token, 224)
-		assert.Equal(t, response.Token, defaultClient.token)
+		assert.Equal(t, response.Token, defaultClient.Token)
 		assert.NotEqual(t, response.Token, oldToken)
 	})
 }

@@ -17,12 +17,12 @@ var ErrInvalidResponse = errors.New("invalid response")
 
 type (
 	Client struct {
-		client     *resty.Client
-		url        string
-		authorizer authStore
-		token      string
-		sseDebug   bool
-		restDebug  bool
+		RestyClient   *resty.Client
+		PocketbaseURL string
+		Authorizer    authStore
+		Token         string
+		SSEDebug      bool
+		RestDebug     bool
 	}
 	ClientOption func(*Client)
 )
@@ -40,9 +40,9 @@ func NewClient(url string, opts ...ClientOption) *Client {
 		SetRetryMaxWaitTime(10 * time.Second)
 
 	c := &Client{
-		client:     client,
-		url:        url,
-		authorizer: authorizeNoOp{},
+		RestyClient:   client,
+		PocketbaseURL: url,
+		Authorizer:    authorizeNoOp{},
 	}
 	opts = append([]ClientOption{}, opts...)
 	if EnvIsTruthy("REST_DEBUG") {
@@ -61,77 +61,77 @@ func NewClient(url string, opts ...ClientOption) *Client {
 
 func WithRestDebug() ClientOption {
 	return func(c *Client) {
-		c.restDebug = true
-		c.client.SetDebug(true)
+		c.RestDebug = true
+		c.RestyClient.SetDebug(true)
 	}
 }
 
 func WithSseDebug() ClientOption {
 	return func(c *Client) {
-		c.sseDebug = true
+		c.SSEDebug = true
 	}
 }
 
 func WithAdminEmailPassword22(email, password string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeEmailPassword(c.client, c.url+"/api/admins/auth-with-password", email, password)
+		c.Authorizer = newAuthorizeEmailPassword(c.RestyClient, c.PocketbaseURL+"/api/admins/auth-with-password", email, password)
 	}
 }
 
 // WithTimeout set the timeout for requests
 func WithTimeout(timeout time.Duration) ClientOption {
 	return func(c *Client) {
-		c.client.SetTimeout(timeout)
+		c.RestyClient.SetTimeout(timeout)
 	}
 }
 
 // WithRetry set the retry settings for requests (defaults: count=3, waitTime=3s, maxWaitTime=10s)
 func WithRetry(count int, waitTime, maxWaitTime time.Duration) ClientOption {
 	return func(c *Client) {
-		c.client.SetRetryCount(count)
-		c.client.SetRetryWaitTime(waitTime)
-		c.client.SetRetryMaxWaitTime(maxWaitTime)
+		c.RestyClient.SetRetryCount(count)
+		c.RestyClient.SetRetryWaitTime(waitTime)
+		c.RestyClient.SetRetryMaxWaitTime(maxWaitTime)
 	}
 }
 
 func WithAdminEmailPassword(email, password string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeEmailPassword(c.client, c.url+fmt.Sprintf("/api/collections/%s/auth-with-password", core.CollectionNameSuperusers), email, password)
+		c.Authorizer = newAuthorizeEmailPassword(c.RestyClient, c.PocketbaseURL+fmt.Sprintf("/api/collections/%s/auth-with-password", core.CollectionNameSuperusers), email, password)
 	}
 }
 
 func WithUserEmailPassword(email, password string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeEmailPassword(c.client, c.url+"/api/collections/users/auth-with-password", email, password)
+		c.Authorizer = newAuthorizeEmailPassword(c.RestyClient, c.PocketbaseURL+"/api/collections/users/auth-with-password", email, password)
 	}
 }
 
 func WithUserEmailPasswordAndCollection(email, password, collection string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeEmailPassword(c.client, c.url+"/api/collections/"+collection+"/auth-with-password", email, password)
+		c.Authorizer = newAuthorizeEmailPassword(c.RestyClient, c.PocketbaseURL+"/api/collections/"+collection+"/auth-with-password", email, password)
 	}
 }
 
 func WithAdminToken22(token string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeToken(c.client, c.url+"/api/admins/auth-refresh", token)
+		c.Authorizer = newAuthorizeToken(c.RestyClient, c.PocketbaseURL+"/api/admins/auth-refresh", token)
 	}
 }
 
 func WithAdminToken(token string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeToken(c.client, c.url+fmt.Sprintf("/api/collections/%s/auth-refresh", core.CollectionNameSuperusers), token)
+		c.Authorizer = newAuthorizeToken(c.RestyClient, c.PocketbaseURL+fmt.Sprintf("/api/collections/%s/auth-refresh", core.CollectionNameSuperusers), token)
 	}
 }
 
 func WithUserToken(token string) ClientOption {
 	return func(c *Client) {
-		c.authorizer = newAuthorizeToken(c.client, c.url+"/api/collections/users/auth-refresh", token)
+		c.Authorizer = newAuthorizeToken(c.RestyClient, c.PocketbaseURL+"/api/collections/users/auth-refresh", token)
 	}
 }
 
 func (c *Client) Authorize() error {
-	return c.authorizer.authorize()
+	return c.Authorizer.authorize()
 }
 
 func (c *Client) Update(collection string, id string, body any) error {
@@ -139,12 +139,12 @@ func (c *Client) Update(collection string, id string, body any) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection).
 		SetBody(body)
 
-	resp, err := request.Patch(c.url + "/api/collections/{collection}/records/" + id)
+	resp, err := request.Patch(c.PocketbaseURL + "/api/collections/{collection}/records/" + id)
 	if err != nil {
 		return fmt.Errorf("[update] can't send update request to pocketbase, err %w", err)
 	}
@@ -164,13 +164,13 @@ func (c *Client) Get(path string, result any, onRequest func(*resty.Request), on
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 	if onRequest != nil {
 		onRequest(request)
 	}
 
-	resp, err := request.Get(c.url + path)
+	resp, err := request.Get(c.PocketbaseURL + path)
 	if err != nil {
 		return fmt.Errorf("[get] can't send get request to pocketbase, err %w", err)
 	}
@@ -199,13 +199,13 @@ func (c *Client) Create(collection string, body any) (ResponseCreate, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection).
 		SetBody(body).
 		SetResult(&response)
 
-	resp, err := request.Post(c.url + "/api/collections/{collection}/records")
+	resp, err := request.Post(c.PocketbaseURL + "/api/collections/{collection}/records")
 	if err != nil {
 		return response, fmt.Errorf("[create] can't send update request to pocketbase, err %w", err)
 	}
@@ -227,12 +227,12 @@ func (c *Client) Delete(collection string, id string) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection).
 		SetPathParam("id", id)
 
-	resp, err := request.Delete(c.url + "/api/collections/{collection}/records/{id}")
+	resp, err := request.Delete(c.PocketbaseURL + "/api/collections/{collection}/records/{id}")
 	if err != nil {
 		return fmt.Errorf("[delete] can't send update request to pocketbase, err %w", err)
 	}
@@ -255,12 +255,12 @@ func (c *Client) One(collection string, id string) (map[string]any, error) {
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection).
 		SetPathParam("id", id)
 
-	resp, err := request.Get(c.url + "/api/collections/{collection}/records/{id}")
+	resp, err := request.Get(c.PocketbaseURL + "/api/collections/{collection}/records/{id}")
 	if err != nil {
 		return response, fmt.Errorf("[one] can't send get request to pocketbase, err %w", err)
 	}
@@ -285,12 +285,12 @@ func (c *Client) OneTo(collection string, id string, result any) error {
 		return err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection).
 		SetPathParam("id", id)
 
-	resp, err := request.Get(c.url + "/api/collections/{collection}/records/{id}")
+	resp, err := request.Get(c.PocketbaseURL + "/api/collections/{collection}/records/{id}")
 	if err != nil {
 		return fmt.Errorf("[oneTo] can't send get request to pocketbase, err %w", err)
 	}
@@ -317,7 +317,7 @@ func (c *Client) List(collection string, params ParamsList) (ResponseList[map[st
 		return response, err
 	}
 
-	request := c.client.R().
+	request := c.RestyClient.R().
 		SetHeader("Content-Type", "application/json").
 		SetPathParam("collection", collection)
 
@@ -340,7 +340,7 @@ func (c *Client) List(collection string, params ParamsList) (ResponseList[map[st
 		request.SetQueryParam("fields", params.Fields)
 	}
 
-	resp, err := request.Get(c.url + "/api/collections/{collection}/records")
+	resp, err := request.Get(c.PocketbaseURL + "/api/collections/{collection}/records")
 	if err != nil {
 		return response, fmt.Errorf("[list] can't send update request to pocketbase, err %w", err)
 	}
@@ -395,7 +395,7 @@ func (c *Client) FullList(collection string, params ParamsList) (ResponseList[ma
 }
 
 func (c *Client) AuthStore() authStore {
-	return c.authorizer
+	return c.Authorizer
 }
 
 func (c *Client) Backup() Backup {

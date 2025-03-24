@@ -21,10 +21,10 @@ func (f Files) GetToken() (string, error) {
 		return "", err
 	}
 
-	request := f.client.R().
+	request := f.RestyClient.R().
 		SetHeader("Content-Type", "application/json")
 
-	resp, err := request.Post(f.url + "/api/files/token")
+	resp, err := request.Post(f.PocketbaseURL + "/api/files/token")
 	if err != nil {
 		return "", fmt.Errorf("[files] can't send token request to pocketbase, err %w", err)
 	}
